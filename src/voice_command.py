@@ -111,11 +111,6 @@ def changeVoice():
         pass
 
 def getText(htmldata):
-    #retText = re.sub('<[^>]*>', ' ', htmldata)
-    #retText = ''.join(xml.etree.ElementTree.fromstring(htmldata).itertext())
-    p = re.compile(r'<.*?>')
-    #retText = p.sub('' , htmldata)
-    #print(retText.strip())
     h = html2text.HTML2Text()
     h.ignore_links = True
     h.ignore_images = True
@@ -130,19 +125,13 @@ def getText(htmldata):
         if x[:7] == 'Source:': break
         else: retText += ' '+x
 
-    #print (retText)
-
     return retText
 
 def getMyLocation():
-    # send_url = 'https://api64.ipify.org?format=json'
-    # j = requests.get(send_url).json()
-    # j = json.loads(r.text)
     response = requests.get('https://api64.ipify.org?format=json').json()
     ip_address = response["ip"]
     response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
 
-    #print(json.dumps(j, indent=4, sort_keys=True))
     j = response
     lat = j['latitude']
     long = j['longitude']
@@ -315,7 +304,7 @@ def processInput(line):
             a = eval(calc)
             voiceRespond(calc + ' equals {0}'.format(a))
         except:
-            voiceRespond('I am do not understand. Try saying it in a different way')
+            voiceRespond('I do not understand. Try saying it in a different way')
 
     elif (line.split(' ', 1)[0] == 'google'):
         q = line.split(' ',1)[1]
