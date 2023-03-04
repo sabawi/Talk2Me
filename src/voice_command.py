@@ -135,17 +135,20 @@ def getText(htmldata):
     return retText
 
 def getMyLocation():
-    send_url = 'http://freegeoip.net/json'
-    r = requests.get(send_url)
-    j = json.loads(r.text)
+    # send_url = 'https://api64.ipify.org?format=json'
+    # j = requests.get(send_url).json()
+    # j = json.loads(r.text)
+    response = requests.get('https://api64.ipify.org?format=json').json()
+    ip_address = response["ip"]
+    response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
 
     #print(json.dumps(j, indent=4, sort_keys=True))
+    j = response
     lat = j['latitude']
     long = j['longitude']
     city = j['city']
-    region = j['region_name']
     country = j['country_name']
-    postal = j['zip_code']
+    postal = j['postal']
     return j
 
 
@@ -327,7 +330,7 @@ def processInput(line):
             line == 'where are we' or \
             line == 'location':
         myloc = getMyLocation()
-        voiceRespond('We are in ' + myloc['city'] + ' ' + myloc['region_name'] + ' ' + myloc['country_name'])
+        voiceRespond('We are in ' + myloc['city']+' '+myloc['region'] + ' ' + myloc['country_name'])
     elif line == 'rename yourself':
         voiceRespond('what should i call myself?')
         str = listen2User()

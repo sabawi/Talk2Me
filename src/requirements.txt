@@ -1,6 +1,6 @@
-playsound==1.2.2
+gTTS==2.3.1
 html2text==2018.1.9
-SpeechRecognition==3.8.1
-requests==2.9.1
+playsound==1.2.2
 pyttsx3==2.7
-gTTS==1.2.2
+requests==2.25.1
+SpeechRecognition==3.8.1
