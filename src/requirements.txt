@@ -1,6 +1,8 @@
+beautifulsoup4==4.11.2
 gTTS==2.3.1
 html2text==2018.1.9
 playsound==1.2.2
 pyttsx3==2.7
 requests==2.25.1
 SpeechRecognition==3.8.1
+xmltodict==0.13.0

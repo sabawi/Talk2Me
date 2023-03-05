@@ -1,4 +1,8 @@
 #python 3+ only
+"""
+        By  : Al Sabawi
+            : 01/03/2011
+"""
 import platform
 import speech_recognition as sr
 from gtts import gTTS
@@ -6,7 +10,6 @@ import pyttsx3
 
 import os
 import sys
-#from nltk.tokenize import sent_tokenize, word_tokenize
 import requests
 import json
 import time
@@ -16,6 +19,7 @@ import html2text
 import logging
 import tempfile
 from playsound import playsound
+import webtext
 
 PLATFORM = platform.system()
 OS_RELEASE = platform.release()
@@ -34,7 +38,7 @@ pytts = pyttsx3.init()
 pyttsVolume = pytts.getProperty('volume')
 pytts.setProperty('volume', 1.25)
 pyttsRate = pytts.getProperty('rate')
-pytts.setProperty('rate', 160)
+pytts.setProperty('rate', 180)
 pytts.setProperty('voice', 'english')
 
 logger = logging.getLogger('voice_log')
@@ -267,7 +271,7 @@ def concatenate_to_end(list,start):
 
 def processInput(line):
     global WAKEUP_WORD
-
+    # voiceRespond("you asked me : "+line)
     first_word = line.split(' ', 1)[0]
     if(first_word == WAKEUP_WORD):
         line.split(' ', 1)
@@ -305,7 +309,18 @@ def processInput(line):
             voiceRespond(calc + ' equals {0}'.format(a))
         except:
             voiceRespond('I do not understand. Try saying it in a different way')
-
+            
+    elif (line == "latest news" or 
+        line == "what\'s the latest news" or 
+        line == "the latest news" or 
+        line == "what\'s up" or 
+        line == "news" or 
+        line == "news please" or 
+        line == "read the latest news" or 
+        line == "what is the latest news") :
+        voiceRespond("Working to get you the latest news, this\'ll take only few seconds ")
+        voiceRespond("Here is the latest news from the web: "+webtext.get_headlines())
+        
     elif (line.split(' ', 1)[0] == 'google'):
         q = line.split(' ',1)[1]
         q2 = q.replace(' ', '+')
