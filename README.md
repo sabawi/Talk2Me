@@ -33,20 +33,21 @@ The interface comes with multiple voice agents:
 - simon
 - rebecca
 
-The current defaul is now set to 'samantha' it might change in later updates. Don't get attached to her;)
+The current default is now set to 'samantha' it might change in later updates. Don't get attached to her;)
 
-To start a conversation, you must preface your request with the active name above for it to "wake up" and recognize what you say is a request to the program.
+To start a conversation, you must preface your request with the active name above for it to "wake up" and recognize you are making a request to the program.
 
 ### Common Requests
 The list is growing, but here are some common requests:
 - 'samantha what's the latest news' : Will read the latest headlines from NY Times, CBS News, CNBC News, and CNN News
-- 'samantha ask wikipedia who is sherlock holmes' : Wll query wikipedia with key words "sherlock holmes" and read the response
-- 'samantha google how to make the best spaghetti sauce' : If you use 'google' at the start of the request, it will open your web browser and search google for the best sauce but it will not read it
-- 'samantha launch firefox' : Will start firefox web browser
+- 'samantha ask wikipedia who is sherlock holmes' : Wll query wikipedia with key words "sherlock holmes" and read the response. Note that you must include the phrase 'ask wikipedia' for the query to go to wikipedia
+- 'samantha google how to make the best spaghetti sauce' : If you use 'google' at the start of the request, it will open your web browser and search google for the best sauce, but it will Not read it!
+- 'samantha launch firefox' : Will start firefox web browser. You can use the key words 'launch' or 'open' to start an application on your system
 - 'samantha what is the distance between earth and the moon' : Will query the MIT knowledge database for an answer and read it
 - 'samantha calculate 527 multiplied by 600' : Using the key word 'calculate' followed by arithmetic operation, it will read out the answer
 - 'samantha open terminal' : This will launch a new application instance of 'terminal' or any other application. 
-- stay tuned for me to come
+- 'samantha play music' : currently will only open youtube music, this maybe changed later to be the deault music player on your system
+- stay tuned for more to come
 
 
 ### To Shutdown the program
