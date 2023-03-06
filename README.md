@@ -46,7 +46,7 @@ The list is growing, but here are some common requests:
 - 'samantha what is the distance between earth and the moon' : Will query the MIT knowledge database for an answer and read it
 - 'samantha calculate 527 multiplied by 600' : Using the key word 'calculate' followed by arithmetic operation, it will read out the answer
 - 'samantha open terminal' : This will launch a new application instance of 'terminal' or any other application. 
-- 'samantha play music' : currently will only open youtube music, this maybe changed later to be the deault music player on your system
+- 'samantha play music' : currently will only open youtube music, this maybe changed later to be the default music player on your system
 - stay tuned for more to come
 
 
