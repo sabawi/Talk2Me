@@ -8,6 +8,7 @@ import speech_recognition as sr
 from gtts import gTTS
 import pyttsx3
 
+import wikipediaapi
 import os
 import sys
 import requests
@@ -20,6 +21,8 @@ import logging
 import tempfile
 from playsound import playsound
 import webtext
+import time
+
 
 PLATFORM = platform.system()
 OS_RELEASE = platform.release()
@@ -27,8 +30,9 @@ OS_RELEASE = platform.release()
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 WAKEUP_WORD = 'samantha'
-MYVOICES = {'pyttsx':'simon','gtts':'samantha','espeak':'amanda'} # Values are : gtts, pyttsx, espeak
+MYVOICES = {'pico':'rebecca','pyttsx':'simon','gtts':'samantha','espeak':'amanda'} # Values are : gtts, pyttsx, espeak
 CURRENT_VOICE = 'gtts'
+# CURRENT_VOICE = 'pico'
 RECOGNIZER = 'google'
 
 recog = sr.Recognizer()
@@ -42,6 +46,59 @@ pytts.setProperty('rate', 180)
 pytts.setProperty('voice', 'english')
 
 logger = logging.getLogger('voice_log')
+
+def chunk_text(text,max = 199):
+    text = text.replace("\"","'")
+    chunks = []
+    
+    while max != -1 and len(text) > max:
+        # Find the last whitespace character before index max
+        i = text.rfind('.', 0, max)
+        # If no whitespace character was found, break at index max
+        if i == -1:
+            i = max
+        # Add the chunk to the list of chunks and remove it from the text
+        chunks.append(str(text[:i]).strip())
+        text = text[i+1:]
+    # Add the final chunk to the list of chunks
+    chunks.append(str(text).strip())
+    return chunks
+
+def wikioedia_query(question):
+    question=str(question.strip())
+    print(question)
+
+    # Create Wikipedia API object
+    wiki = wikipediaapi.Wikipedia('en')
+    
+    # Define regular expression pattern to match a question
+    pattern = r"^(?:what|who|when|where|why|how)(?:\s+(?:is|are|was|were|will|can|could|should|would))?\s+(.+?)(?:[\s\?])?$"
+
+    # # Take user input as question
+    # question = str(text)
+
+    # Apply pattern to the question
+    match = re.match(pattern, question.lower())
+
+    if match:
+        # Replace the matched text with the corresponding query string
+        query = match.group(1)
+        query = query.strip()
+    else:
+        # If no pattern matches, use the original question as the query
+        query = question.strip()
+
+    # Search Wikipedia for the query
+    print(f"q = {query}")
+    page = wiki.page(query)
+    
+    # Print the summary of the Wikipedia page
+    if page.exists():
+        return page.summary.replace("\"","'")+" That's it for "+query
+    else:
+        return "Sorry, I couldn't find anything on that topic."
+
+
 
 def testVoices(pytts):
     rate = pytts.getProperty('rate')
@@ -206,23 +263,37 @@ def text2Voice(line,bywho = CURRENT_VOICE):
     try:
         #print("my current voice is " + MYVOICES[CURRENT_VOICE])
         if(bywho == 'gtts'):
-            tts = gTTS(text=line, lang='en')
-            temp = tempfile.NamedTemporaryFile(suffix='.mp3')
-            tts.write_to_fp(temp)
-            temp.flush()
-            #print(PLATFORM.lower())
-            if PLATFORM.lower() == 'linux':
-                os.system("mpg321 -q " + temp.name)
-            if PLATFORM.lower() == 'windows':
-                playsound(temp.name)
-            
-            temp.close()
-            
+            chunks = chunk_text(line,max=800)
+            for i in range(len(chunks)):
+                tts = gTTS(text=str(chunks[i]), lang='en')
+                temp = tempfile.NamedTemporaryFile(suffix='.mp3')
+                try:
+                    tts.write_to_fp(temp)
+                except Exception as inst:
+                    logger.error('Engine : ' + bywho + ':Error: ')
+                    logger.error(inst)
+                    logger.error(chunks[i])
+                    pass
+                
+                temp.flush()
+                #print(PLATFORM.lower())
+                if PLATFORM.lower() == 'linux':
+                    os.system("mpg321 -q " + temp.name)
+                if PLATFORM.lower() == 'windows':
+                    playsound(temp.name)
+                
+                temp.close()
         elif(bywho == 'pyttsx'):
             pytts.say(line)
             pytts.runAndWait()
         elif(bywho == 'espeak'):
             os.system("espeak -p30 -ven-us+f4 -s150 \"" + line.replace('"','\\') + "\"")
+        elif(bywho == 'pico'):
+            temp = tempfile.NamedTemporaryFile(suffix='.wav')
+            os.system(f"pico2wave -l='en-US' -w={temp.name} \"" + line.replace('"','\\') + "\" 2> /dev/null")
+            temp.flush()
+            os.system(f"aplay {temp.name} 2> /dev/null")
+            temp.close()
 
     except requests.exceptions.ConnectionError:
         logger.error ( 'voiceRespond() : Exception: requests.exceptions.ConnectionError encountered')
@@ -276,14 +347,6 @@ def processInput(line):
     if(first_word == WAKEUP_WORD):
         line.split(' ', 1)
 
-    #words = word_tokenize(line)
-    #i = 0
-    #count = len(words)
-    #voiceRespond('You used words like ')
-    # while i < count:
-    #     voiceRespond(words[i])
-    #     i += 1
-
     # Process basic commands
     if line == 'shut down' or \
                     line == 'kill yourself' or \
@@ -301,6 +364,9 @@ def processInput(line):
         voiceRespond('you are welcome')
     elif line == 'how are you':
         voiceRespond('I am fine. Thank you')
+    elif line == 'calculate':
+        voiceRespond('I can only perform simple arithmetics like 534 plus 127 or 126 divided by 6')
+        voiceRespond('Use the word "Calculate" followed by the arithmetic operation please ')
     elif (line.split(' ', 1)[0] == 'calculate'):
         calc = line.split(' ', 1)[1]
         print (calc)
@@ -319,27 +385,49 @@ def processInput(line):
         line == "read the latest news" or 
         line == "what is the latest news") :
         voiceRespond("Working to get you the latest news, this\'ll take only few seconds ")
-        voiceRespond("Here is the latest news from the web: "+webtext.get_headlines())
+        voiceRespond(f"Here is the latest news from the web: {webtext.get_headlines()}")
+        voiceRespond("And that wraps the news for now")
         
     elif (line.split(' ', 1)[0] == 'google'):
         q = line.split(' ',1)[1]
         q2 = q.replace(' ', '+')
-        print(q2)
-        os.system('google-chrome https://www.google.com/search?q='+q2+' &')
-
+        voiceRespond(f'googling {q}')
+        os.system('google-chrome https://www.google.com/search?q='+q2+'> /dev/null 1> /dev/null 2> /dev/null &')
+    elif line.lower().find('ask wikipedia') != -1:
+        line2 = line.replace('ask wikipedia',' ')
+        voiceRespond('asking wikipedia ')
+        if len(line2.strip(' ')) == 0:
+            voiceRespond('what\'s the question?')
+            question = listen2User()
+            res = wikioedia_query(question)
+            line2 = question
+        else:
+            res = wikioedia_query(line2)
+        voiceRespond(res+' '+line2)
+    elif line.split(' ', 1)[0] == 'launch' or line.split(' ', 1)[0] == 'open' :
+        if len(line.split(' ',1)) > 1:
+            program = line.split(' ',1)[1].replace(' ', '')
+            voiceRespond('launching '+ program)
+            os.system(program + '> /dev/null 1> /dev/null 2> /dev/null &')
+        else:
+            voiceRespond("say the word launch or open followed by the application name to run it")
+            
+            
     elif line == 'play music':
-        os.system('google-chrome https://www.youtube.com/watch?v=rYEDA3JcQqw&list=RDEMTPfPURSbYpb0YHCKyIG37Q' + ' &')
+        voiceRespond('playing music on youtube.com')
+        os.system('google-chrome https://www.youtube.com/watch?v=rYEDA3JcQqw&list=RDEMTPfPURSbYpb0YHCKyIG37Q' + '> /dev/null 1> /dev/null 2> /dev/null &')
     elif line == 'get my location' or \
             line == 'where am i' or \
             line == 'where are we' or \
             line == 'location':
+        voiceRespond('Working on it, this may take few seconds. Please wait.')
         myloc = getMyLocation()
         voiceRespond('We are in ' + myloc['city']+' '+myloc['region'] + ' ' + myloc['country_name'])
     elif line == 'rename yourself':
         voiceRespond('what should i call myself?')
-        str = listen2User()
-        voiceRespond(str)
-        WAKEUP_WORD = str
+        strs = listen2User()
+        voiceRespond(strs)
+        WAKEUP_WORD = strs
     elif line == 'change your voice':
         changeVoice()
     else:
