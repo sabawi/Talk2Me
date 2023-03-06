@@ -36,9 +36,20 @@ The current defaul is now set to 'samantha' it might change in later updates. Do
 
 To start a conversation, you must preface your request with the active name above for it to "wake up" and recognize what you say is a request to the program.
 
-### To Shutdown the program
+### Common Requests
+The list is growing, but here are some common requests:
+- 'samantha what's the latest news' : Will read the latest headlines from NY Times, CBS News, CNBC News, and CNN News
+- 'samantha ask wikipedia who is sherlock holmes' : Wll query wikipedia with key words "sherlock holmes" and read the response
+- 'samantha google how to make the best spaghetti sauce' : If you use 'google' at the start of the request, it will open your web browser and search google for the best sauce but it will not read it
+- 'samantha launch firefox' : Will start firefox web browser
+- 'samantha what is the distance between earth and the moon' : Will query the MIT knowledge database for an answer and read it
+- 'samantha calculate 527 multiplied by 600' : Using the key word 'calculate' followed by arithmetic operation, it will read out the answer
+- 'samantha open terminal' : This will launch a new application instance of 'terminal' or any other application. 
+- stay tuned for me to come
 
-Just say the same of the agent, e.g. sanamtha, rebecca, or whichever the active agent is, followed by the words 
+
+### To Shutdown the program
+To shut down, say the agent's name, e.g. sanamtha, rebecca, followed by the words 
 -**'shut down'** or 
 -**'end program'** or 
 -**'exit program'** or simply 
