@@ -32,6 +32,7 @@ The interface comes with multiple voice agents:
 - amanda
 - simon
 - rebecca
+
 The current defaul is now set to 'samantha' it might change in later updates. Don't get attached to her;)
 
 To start a conversation, you must preface your request with the active name above for it to "wake up" and recognize what you say is a request to the program.
