@@ -40,7 +40,7 @@ To start a conversation, you must preface your request with the active name abov
 ### Common Requests
 The list is growing, but here are some common requests:
 - 'samantha what's the latest news' : Will read the latest headlines from NY Times, CBS News, CNBC News, and CNN News
-- 'samantha ask wikipedia who is sherlock holmes' : Wll query wikipedia with key words "sherlock holmes" and read the response. Note that you must include the phrase 'ask wikipedia' for the query to go to wikipedia
+- 'samantha ask wikipedia who is sherlock holmes' : Will query wikipedia with key words "sherlock holmes" and read the response. Note that you must include the phrase 'ask wikipedia' for the query to go to wikipedia
 - 'samantha google how to make the best spaghetti sauce' : If you use 'google' at the start of the request, it will open your web browser and search google for the best sauce, but it will Not read it!
 - 'samantha launch firefox' : Will start firefox web browser. You can use the key words 'launch' or 'open' to start an application on your system
 - 'samantha what is the distance between earth and the moon' : Will query the MIT knowledge database for an answer and read it
