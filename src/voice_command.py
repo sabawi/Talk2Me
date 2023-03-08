@@ -2,6 +2,7 @@
 """
         By  : Al Sabawi
             : 01/03/2011
+        
 """
 import platform
 import speech_recognition as sr
@@ -22,11 +23,12 @@ import tempfile
 from playsound import playsound
 import webtext
 import time
+import traceback
 
 
 PLATFORM = platform.system()
 OS_RELEASE = platform.release()
-
+MYLOCATION = None
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 WAKEUP_WORD = 'samantha'
@@ -98,7 +100,26 @@ def wikioedia_query(question):
     else:
         return "Sorry, I couldn't find anything on that topic."
 
-
+def get_forecast(lat, lon):
+    # Get the grid endpoint for the provided coordinates
+    response = requests.get(f"https://api.weather.gov/points/{lat},{lon}")
+    if response.status_code == 200:
+        grid_data = response.json()
+        grid_url = grid_data['properties']['forecast']
+        # Get the forecast data for the grid endpoint
+        response = requests.get(grid_url)
+        if response.status_code == 200:
+            forecast_data = response.json()
+            # Extract the relevant forecast information
+            forecast_periods = forecast_data['properties']['periods']
+            forecast = ''
+            for period in forecast_periods:
+                forecast += f"{period['name']}: {period['detailedForecast']}\n"
+            return forecast
+        else:
+            return f"Error retrieving forecast data: {response.status_code}"
+    else:
+        return f"Error retrieving grid data: {response.status_code}"
 
 def testVoices(pytts):
     rate = pytts.getProperty('rate')
@@ -129,11 +150,12 @@ def testVoices(pytts):
 
 def setLogger():
     global logger
+    # logging.basicConfig(filename='voicedebug.log', encoding='utf-8', level=logging.DEBUG)
     hdlr = logging.FileHandler('./voicelog.log')
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
-    logger.setLevel(logging.WARNING)
+    
 
 def changeVoice():
     global CURRENT_VOICE
@@ -188,17 +210,41 @@ def getText(htmldata):
 
     return retText
 
-def getMyLocation():
-    response = requests.get('https://api64.ipify.org?format=json').json()
-    ip_address = response["ip"]
-    response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
+def saveMyLocationToFile():
+    try:
+        response = requests.get('https://api64.ipify.org?format=json').json()
+        ip_address = response["ip"]
+        jresponse = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
 
-    j = response
-    lat = j['latitude']
-    long = j['longitude']
-    city = j['city']
-    country = j['country_name']
-    postal = j['postal']
+        with open('geodata.json', 'w', encoding='utf-8') as f:
+            json.dump(jresponse, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        logging.error(f"@saveMyLocationToFile() Error from {__name__}")
+        logging.error(traceback.format_exc())
+        jresponse = None
+        pass
+    
+    return jresponse
+
+
+def getMyLocation():
+    try:
+        filename = 'geodata.json'
+        f = open(filename)
+    except IOError:
+        logging.error(f"@getMyLocation() I/O error: {filename} Not Found")
+        j = None
+    else:  
+        data = json.load(f)
+        # Closing file
+        f.close()  
+        j = data
+        lat = j['latitude']
+        long = j['longitude']
+        city = j['city']
+        country = j['country_name']
+        postal = j['postal']
+    
     return j
 
 
@@ -226,11 +272,11 @@ def recognizeAudio(audio,bywho=RECOGNIZER):
 
     except sr.WaitTimeoutError:
         print('Timed out! Repeat request')
-        logger.error("Http Communication Error: Possible internet outage. Msg:'{0}'".format(sr.WaitTimeoutError))
+        logger.error("@recognizeAudio Http Communication Error: Possible internet outage. Msg:'{0}'".format(sr.WaitTimeoutError))
 
     except sr.RequestError:
         print('Timed out! Repeat request')
-        logger.error("Http Communication Error: Possible internet outage. Msg:'{0}'".format(sr.RequestError))
+        logger.error("@recognizeAudio Http Communication Error: Possible internet outage. Msg:'{0}'".format(sr.RequestError))
 
     return value
 
@@ -261,9 +307,8 @@ def listen2User():
 
 def text2Voice(line,bywho = CURRENT_VOICE):
     try:
-        #print("my current voice is " + MYVOICES[CURRENT_VOICE])
         if(bywho == 'gtts'):
-            chunks = chunk_text(line,max=800)
+            chunks = chunk_text(line,max=5000)
             for i in range(len(chunks)):
                 tts = gTTS(text=str(chunks[i]), lang='en')
                 temp = tempfile.NamedTemporaryFile(suffix='.mp3')
@@ -342,6 +387,8 @@ def concatenate_to_end(list,start):
 
 def processInput(line):
     global WAKEUP_WORD
+    global MYLOCATION
+    
     # voiceRespond("you asked me : "+line)
     first_word = line.split(' ', 1)[0]
     if(first_word == WAKEUP_WORD):
@@ -389,10 +436,14 @@ def processInput(line):
         voiceRespond("And that wraps the news for now")
         
     elif (line.split(' ', 1)[0] == 'google'):
-        q = line.split(' ',1)[1]
-        q2 = q.replace(' ', '+')
-        voiceRespond(f'googling {q}')
-        os.system('google-chrome https://www.google.com/search?q='+q2+'> /dev/null 1> /dev/null 2> /dev/null &')
+        if len(line.split()) == 1:
+            voiceRespond("Nothing to google, try again")
+        else:
+            q = line.split(' ',1)[1]
+            voiceRespond(f'googling {q}')
+            q = q.replace("\'","%27")
+            q2 = q.replace(' ', '+')
+            os.system('google-chrome https://www.google.com/search?q='+q2+'> /dev/null 1> /dev/null 2> /dev/null &')
     elif line.lower().find('ask wikipedia') != -1:
         line2 = line.replace('ask wikipedia',' ')
         voiceRespond('asking wikipedia ')
@@ -408,21 +459,60 @@ def processInput(line):
         if len(line.split(' ',1)) > 1:
             program = line.split(' ',1)[1].replace(' ', '')
             voiceRespond('launching '+ program)
-            os.system(program + '> /dev/null 1> /dev/null 2> /dev/null &')
+            os.system(f"gnome-terminal -- bash -c '{program}; exec bash' "+ ' 1> /dev/null 2> /dev/null &')
         else:
             voiceRespond("say the word launch or open followed by the application name to run it")
             
-            
+    elif line == "query my location" or \
+        line == 'update my location' or \
+        line == 'query your location' or \
+        line == 'check your location' or \
+        line == 'update your locatio' or \
+        line == "check my location":
+        voiceRespond("checking my location, this may take a second")
+        MYLOCATION = saveMyLocationToFile()
+        if MYLOCATION:
+            voiceRespond("Done! I refreshed my location")
+        else:
+            voiceRespond("Location query failed")
+        
     elif line == 'play music':
         voiceRespond('playing music on youtube.com')
         os.system('google-chrome https://www.youtube.com/watch?v=rYEDA3JcQqw&list=RDEMTPfPURSbYpb0YHCKyIG37Q' + '> /dev/null 1> /dev/null 2> /dev/null &')
     elif line == 'get my location' or \
+            line == 'get your location' or \
             line == 'where am i' or \
             line == 'where are we' or \
+            line == 'where are you' or \
             line == 'location':
-        voiceRespond('Working on it, this may take few seconds. Please wait.')
-        myloc = getMyLocation()
+        voiceRespond('getting location ')
+        if MYLOCATION:
+            myloc = MYLOCATION
+        else:
+            myloc = MYLOCATION = getMyLocation()
+            
         voiceRespond('We are in ' + myloc['city']+' '+myloc['region'] + ' ' + myloc['country_name'])
+    elif line == "weather report" or \
+        line == "what's the weather like" or \
+        line == "the weather report" or \
+        line == "the weather today" or \
+        line == "what's the weather" or \
+        line == "forecast" or \
+        line == "weather forecast" or \
+        line == "what's the forecast" or \
+        line == "what's the weather forecast" or \
+        line == "what's the weather like today" or \
+        line == "I need the weather" :
+        MYLOCATION = getMyLocation()
+        if MYLOCATION:
+            voiceRespond("getting the weather from US NWS, It'll be a second")
+            forecast = get_forecast(lat = MYLOCATION['latitude'], lon = MYLOCATION['longitude'])
+        else:
+            voiceRespond("sorry, my location is unknown. I need to update my location before I can get the weather")
+            forecast = None
+        if forecast:
+            voiceRespond(f"here is the weather forecast for {MYLOCATION['city']} as of now:" + chunk_text(forecast,max=300)[0])
+            
     elif line == 'rename yourself':
         voiceRespond('what should i call myself?')
         strs = listen2User()
@@ -493,27 +583,20 @@ try:
         while not awake: #If timed out keep re-trying
             try:
                 awake,line = wait2wakeup()
-                #print ("Awake = {0} Line = {1}".format(awake,line))
+                
             except KeyboardInterrupt:
                 print('Shutting down!')
                 sys.exit(0)
+                
         try:
             if(awake == True and line == ''):
                 line = listen2User()
 
-            #if challengeRequest(line):
-                # yes
-                #voiceRespond('processing')
             processInput(line)
-            #else:
-            # no
-            #voiceRespond('I can\'t help you. Sorry!')
-            #voiceRespond('Say another command')
 
         except sr.UnknownValueError:
             logger.error("Oops! Didn't catch that")
-            #voiceRespond('Did someone say something? I didn\'t catch that.')
-            #adjust4Noise()
+
         except sr.RequestError as e:
             logger.error("Uh oh! Couldn't request results from Google Speech Recognition service; {0}".format(e))
 
