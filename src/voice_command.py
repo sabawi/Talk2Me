@@ -494,6 +494,7 @@ def processInput(line):
         voiceRespond('We are in ' + myloc['city']+' '+myloc['region'] + ' ' + myloc['country_name'])
     elif line == "weather report" or \
         line == "what's the weather like" or \
+        line == "what is the weather like" or \
         line == "the weather report" or \
         line == "the weather today" or \
         line == "what's the weather" or \
